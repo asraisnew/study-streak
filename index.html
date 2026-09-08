@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Streak 📚</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #f8fafc;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.container {
+  max-width: 500px;
+  margin: auto;
+}
+
+h1 {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: #94a3b8;
+  margin-bottom: 25px;
+}
+
+.card {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 18px;
+  margin-bottom: 15px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.number {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.label {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+input {
+  width: 100%;
+  padding: 14px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 10px;
+  background: #334155;
+  color: white;
+  font-size: 16px;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: #6366f1;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.sessions {
+  margin-top: 15px;
+}
+
+.session {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #334155;
+}
+
+.empty {
+  color: #94a3b8;
+  text-align: center;
+  padding: 10px;
+}
+
+.clear {
+  background: #475569;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>📚 Study Streak</h1>
+  <p class="subtitle">Small progress every day.</p>
+
+  <div class="card">
+    <div class="stats">
+
+      <div class="stat">
+        <div class="number" id="streak">0</div>
+        <div class="label">🔥 Streak</div>
+      </div>
+
+      <div class="stat">
+        <div class="number" id="hours">0</div>
+        <div class="label">⏱️ Hours</div>
+      </div>
+
+      <div class="stat">
+        <div class="number" id="sessionsCount">0</div>
+        <div class="label">✅ Sessions</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Log Study Session</h2>
+
+    <input id="subject" type="text" placeholder="What did you study?">
+
+    <input id="duration" type="number" placeholder="Minutes">
+
+    <button onclick="addSession()">Add Session ➕</button>
+  </div>
+
+  <div class="card">
+    <h2>Today's Sessions</h2>
+
+    <div id="sessions" class="sessions">
+      <div class="empty">No sessions yet.</div>
+    </div>
+
+    <button class="clear" onclick="clearSessions()">
+      Clear All
+    </button>
+  </div>
+
+</div>
+
+<script>
+let sessions = JSON.parse(localStorage.getItem("studySessions")) || [];
+
+function save() {
+  localStorage.setItem("studySessions", JSON.stringify(sessions));
+}
+
+function addSession() {
+
+  const subject = document.getElementById("subject").value.trim();
+  const duration = Number(document.getElementById("duration").value);
+
+  if (!subject || !duration || duration <= 0) {
+    alert("Please enter a subject and study time.");
+    return;
+  }
+
+  sessions.push({
+    subject: subject,
+    duration: duration,
+    date: new Date().toISOString().split("T")[0]
+  });
+
+  save();
+
+  document.getElementById("subject").value = "";
+  document.getElementById("duration").value = "";
+
+  render();
+}
+
+function clearSessions() {
+  if (confirm("Delete all study sessions?")) {
+    sessions = [];
+    save();
+    render();
+  }
+}
+
+function render() {
+
+  const list = document.getElementById("sessions");
+
+  list.innerHTML = "";
+
+  if (sessions.length === 0) {
+    list.innerHTML = '<div class="empty">No sessions yet.</div>';
+  }
+
+  sessions.slice().reverse().forEach(session => {
+
+    const div = document.createElement("div");
+
+    div.className = "session";
+
+    div.innerHTML = `
+      <span>📖 ${session.subject}</span>
+      <strong>${session.duration} min</strong>
+    `;
+
+    list.appendChild(div);
+  });
+
+  const totalMinutes = sessions.reduce(
+    (sum, session) => sum + session.duration,
+    0
+  );
+
+  document.getElementById("hours").textContent =
+    (totalMinutes / 60).toFixed(1);
+
+  document.getElementById("sessionsCount").textContent =
+    sessions.length;
+
+  calculateStreak();
+}
+
+function calculateStreak() {
+
+  const dates = [...new Set(
+    sessions.map(session => session.date)
+  )].sort().reverse();
+
+  if (dates.length === 0) {
+    document.getElementById("streak").textContent = "0";
+    return;
+  }
+
+  let streak = 1;
+
+  for (let i = 0; i < dates.length - 1; i++) {
+
+    const current = new Date(dates[i]);
+    const previous = new Date(dates[i + 1]);
+
+    const difference =
+      (current - previous) / (1000 * 60 * 60 * 24);
+
+    if (difference === 1) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+
+  document.getElementById("streak").textContent = streak;
+}
+
+render();
+</script>
+
+</body>
+</html>
